@@ -23,7 +23,6 @@
 
 所有解析均在瀏覽器內完成。網頁沒有後端、不送出網路請求、不使用分析服務，也不把貼上的報告寫入瀏覽器儲存空間。請勿將真實病人報告或其他 PHI commit 到 repository。
 
-## Contributors
+## Acknowledgments
 
-- ChatGPT
-- Grok
+程式初稿由 ChatGPT 產生，Grok 協助公開頁與文件。作者為 [idnerdtw](https://github.com/idnerdtw)。ChatGPT 與 Grok 不是 GitHub collaborator，也不列為著作權人。
