@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="將西園醫院 Hemegram 與 Chemistry 報告整理成簡短查房格式。">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>西園檢驗報告轉換器</title>
+  <style>
+    :root {
+      color: #17212b;
+      background: #eef3f7;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", sans-serif;
+      font-synthesis: none;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        linear-gradient(135deg, rgba(29, 102, 122, .08), transparent 45%),
+        #eef3f7;
+    }
+
+    main {
+      width: min(920px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 34px 0 48px;
+    }
+
+    header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0 0 7px;
+      color: #123f50;
+      font-size: clamp(1.55rem, 4vw, 2.1rem);
+      line-height: 1.2;
+      letter-spacing: .01em;
+    }
+
+    .privacy {
+      margin: 0;
+      color: #536473;
+      font-size: .94rem;
+      line-height: 1.55;
+    }
+
+    .local-badge {
+      flex: 0 0 auto;
+      padding: 7px 10px;
+      border: 1px solid #a9c7bc;
+      border-radius: 999px;
+      background: #eaf6f1;
+      color: #245f4d;
+      font-size: .82rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .panel {
+      padding: 22px;
+      border: 1px solid #d7e0e6;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, .96);
+      box-shadow: 0 14px 38px rgba(36, 55, 70, .08);
+    }
+
+    .date-row {
+      display: grid;
+      grid-template-columns: minmax(170px, 230px) 1fr;
+      gap: 14px;
+      align-items: end;
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 7px;
+      color: #253846;
+      font-size: .94rem;
+      font-weight: 700;
+    }
+
+    input, textarea, pre, button { font: inherit; }
+
+    input, textarea {
+      width: 100%;
+      border: 1px solid #b9c7d1;
+      border-radius: 10px;
+      background: #fbfdfe;
+      color: #15232d;
+      outline: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+
+    input {
+      min-height: 44px;
+      padding: 9px 11px;
+    }
+
+    textarea {
+      min-height: 270px;
+      padding: 13px;
+      resize: vertical;
+      line-height: 1.52;
+      tab-size: 2;
+    }
+
+    input:focus, textarea:focus {
+      border-color: #237a91;
+      box-shadow: 0 0 0 3px rgba(35, 122, 145, .14);
+    }
+
+    .hint {
+      margin: 0 0 1px;
+      color: #6a7781;
+      font-size: .86rem;
+      line-height: 1.45;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 15px 0 20px;
+    }
+
+    button {
+      min-height: 44px;
+      padding: 9px 16px;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 750;
+    }
+
+    button:focus-visible {
+      outline: 3px solid rgba(35, 122, 145, .28);
+      outline-offset: 2px;
+    }
+
+    .primary {
+      background: #17647a;
+      color: white;
+    }
+
+    .primary:hover { background: #105469; }
+
+    .secondary {
+      border-color: #c3cfd6;
+      background: #f5f8fa;
+      color: #2c3d49;
+    }
+
+    .secondary:hover { background: #edf2f5; }
+
+    .result-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 7px;
+    }
+
+    .result-head label { margin: 0; }
+
+    .copy-button {
+      min-height: 36px;
+      padding: 6px 12px;
+      font-size: .88rem;
+    }
+
+    pre {
+      min-height: 94px;
+      margin: 0;
+      padding: 15px;
+      overflow-x: auto;
+      border: 1px solid #c8d4db;
+      border-radius: 10px;
+      background: #f4f8fa;
+      color: #10232c;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 1rem;
+      line-height: 1.65;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .status {
+      min-height: 1.45em;
+      margin: 8px 1px 0;
+      color: #536473;
+      font-size: .88rem;
+    }
+
+    .status.error { color: #a13b32; }
+    .status.ok { color: #27664f; }
+
+    footer {
+      margin-top: 13px;
+      color: #64727d;
+      font-size: .82rem;
+      text-align: center;
+    }
+
+    @media (max-width: 620px) {
+      main { padding-top: 22px; }
+      header { display: block; }
+      .local-badge { display: inline-block; margin-top: 12px; }
+      .panel { padding: 17px; border-radius: 13px; }
+      .date-row { grid-template-columns: 1fr; }
+      textarea { min-height: 310px; }
+      .actions button { flex: 1 1 120px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>西園檢驗報告轉換器</h1>
+        <p class="privacy">貼上 Hemegram / Chemistry 報告，轉成簡短查房格式。</p>
+      </div>
+      <span class="local-badge">僅在此裝置處理</span>
+    </header>
+
+    <section class="panel" aria-labelledby="report-label">
+      <div class="date-row">
+        <div>
+          <label for="report-date">日期</label>
+          <input id="report-date" type="text" inputmode="numeric" autocomplete="off" placeholder="例如 0831、8/31" aria-describedby="date-hint">
+        </div>
+        <p class="hint" id="date-hint">也可輸入 2026-08-31；輸出會統一顯示為 0831。</p>
+      </div>
+
+      <label id="report-label" for="report-input">西園檢驗報告</label>
+      <textarea id="report-input" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="把 Hemegram / Chemistry 文字貼在這裡"></textarea>
+
+      <div class="actions">
+        <button class="primary" id="convert-button" type="button">轉換</button>
+        <button class="secondary" id="clear-button" type="button">清除</button>
+      </div>
+
+      <div class="result-head">
+        <label for="result-output">轉換結果</label>
+        <button class="secondary copy-button" id="copy-button" type="button">複製結果</button>
+      </div>
+      <pre id="result-output" tabindex="0" aria-live="polite"></pre>
+      <p class="status" id="status" role="status" aria-live="polite"></p>
+    </section>
+
+    <footer>報告內容不會上傳、儲存或傳送到其他服務。</footer>
+  </main>
+
+  <script>
+    (() => {
+      'use strict';
+
+      const dateInput = document.getElementById('report-date');
+      const reportInput = document.getElementById('report-input');
+      const resultOutput = document.getElementById('result-output');
+      const status = document.getElementById('status');
+
+      const groups = [
+        {
+          fields: [
+            { output: 'BUN', aliases: ['BUN'] },
+            { output: 'Cr', aliases: ['Creatinine', 'CREA', 'Cr'] },
+            { output: 'CRP', aliases: ['CRP'] },
+            { output: 'Na', aliases: ['Na', 'Sodium'] }
+          ]
+        },
+        {
+          fields: [
+            { output: 'WBC', aliases: ['WBC'] },
+            { output: 'Hb', aliases: ['Hemoglobin', 'HGB', 'Hb'] },
+            { output: 'PLT', aliases: ['Platelet', 'PLT'] }
+          ]
+        }
+      ];
+
+      function escapeRegExp(value) {
+        return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      }
+
+      function normalizeText(value) {
+        return String(value || '')
+          .normalize('NFKC')
+          .replace(/\u00a0/g, ' ')
+          .replace(/\r\n?/g, '\n');
+      }
+
+      function normalizeDate(value) {
+        const normalized = normalizeText(value).trim();
+        if (!normalized) return '';
+
+        const separated = normalized.match(/^(?:\d{4}[\/-])?(\d{1,2})[\/-](\d{1,2})$/);
+        if (separated) {
+          const month = Number(separated[1]);
+          const day = Number(separated[2]);
+          if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+            return String(month).padStart(2, '0') + String(day).padStart(2, '0');
+          }
+          return '';
+        }
+
+        const digits = normalized.replace(/\D/g, '');
+        if (/^\d{8}$/.test(digits)) return normalizeDate(digits.slice(4, 6) + '/' + digits.slice(6));
+        if (/^\d{4}$/.test(digits)) return normalizeDate(digits.slice(0, 2) + '/' + digits.slice(2));
+        if (/^\d{3}$/.test(digits)) return normalizeDate(digits.slice(0, 1) + '/' + digits.slice(1));
+        return '';
+      }
+
+      function extractValue(lines, aliases) {
+        const orderedAliases = [...aliases].sort((a, b) => b.length - a.length);
+
+        for (const alias of orderedAliases) {
+          const namePattern = new RegExp('^\\s*' + escapeRegExp(alias) + '(?=\\s|[:：()（]|[\\u3400-\\u9fff])', 'i');
+          for (const line of lines) {
+            if (!namePattern.test(line)) continue;
+            const remainder = line.replace(namePattern, ' ');
+            const number = remainder.match(/[<>≤≥]?\s*-?\d+(?:\.\d+)?/);
+            if (number) return number[0].replace(/\s+/g, '');
+          }
+        }
+        return '';
+      }
+
+      function parseReport(text, date) {
+        const lines = normalizeText(text).split('\n').filter(line => line.trim());
+        return groups.map(group => {
+          const values = group.fields
+            .map(field => ({ ...field, value: extractValue(lines, field.aliases) }))
+            .filter(field => field.value);
+          if (!values.length) return '';
+          return [date, ...values.flatMap(field => [field.output, field.value])].join(' ');
+        }).filter(Boolean).join('\n');
+      }
+
+      function setStatus(message, type = '') {
+        status.textContent = message;
+        status.className = 'status' + (type ? ' ' + type : '');
+      }
+
+      function convert() {
+        const date = normalizeDate(dateInput.value);
+        if (!date) {
+          resultOutput.textContent = '';
+          setStatus('請輸入有效日期，例如 0831 或 8/31。', 'error');
+          dateInput.focus();
+          return;
+        }
+        if (!reportInput.value.trim()) {
+          resultOutput.textContent = '';
+          setStatus('請先貼上檢驗報告。', 'error');
+          reportInput.focus();
+          return;
+        }
+
+        const result = parseReport(reportInput.value, date);
+        resultOutput.textContent = result;
+        if (result) {
+          setStatus('轉換完成。缺少的檢驗項目會自動略過。', 'ok');
+        } else {
+          setStatus('找不到可辨識的 WBC、Hb、PLT、BUN、Cr、CRP 或 Na。', 'error');
+        }
+      }
+
+      async function copyResult() {
+        const text = resultOutput.textContent;
+        if (!text) {
+          setStatus('目前沒有可複製的結果。', 'error');
+          return;
+        }
+
+        try {
+          await navigator.clipboard.writeText(text);
+        } catch (_) {
+          const helper = document.createElement('textarea');
+          helper.value = text;
+          helper.setAttribute('readonly', '');
+          helper.style.position = 'fixed';
+          helper.style.opacity = '0';
+          document.body.appendChild(helper);
+          helper.select();
+          document.execCommand('copy');
+          helper.remove();
+        }
+        setStatus('已複製。', 'ok');
+      }
+
+      document.getElementById('convert-button').addEventListener('click', convert);
+      document.getElementById('copy-button').addEventListener('click', copyResult);
+      document.getElementById('clear-button').addEventListener('click', () => {
+        reportInput.value = '';
+        resultOutput.textContent = '';
+        setStatus('');
+        reportInput.focus();
+      });
+
+      reportInput.addEventListener('keydown', event => {
+        if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') convert();
+      });
+    })();
+  </script>
+</body>
+</html>
