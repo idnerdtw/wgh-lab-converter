@@ -32,3 +32,8 @@ Repository 改為 public 後，到 **Settings → Pages**：
 ## 本機使用
 
 直接下載並開啟 `index.html` 即可，不需安裝任何套件。
+
+## Contributors
+
+- ChatGPT
+- Grok
